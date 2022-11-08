@@ -15,7 +15,7 @@ Vue.component('product', {
       <h1>{{ title }}</h1>
       <p v-if="inStock">In stock</p>
       <p v-else>Out of stock</p>
-      <p>Shipping: {{ sjipping }}</p>
+      <p>Shipping: {{ shipping }}</p>
   
       <ul>
         <li v-for="detail in details">{{ detail }}</li>
@@ -36,7 +36,19 @@ Vue.component('product', {
       <button class="takeOfButton" @click="removeFromCart">take out of cart</button>
     </div>
 
-    <product-review></product-review>
+    <div>
+      <h1>Reviews:</h1>
+      <p v-if="!reviews.length">There are not reviews yet.</p>
+      <ul>
+        <li v-for="review in reviews">
+        <p>{{ review.name }}</p>
+        <p>Rating:{{ review.rating }}</p>
+        <p>{{ review.review }}</p>
+        </li>
+      </ul>
+    </div>
+
+    <product-review @review-submitted="addReview"></product-review>
   </div>`,
   
   data() {
@@ -59,18 +71,22 @@ Vue.component('product', {
         variantQuantity: 0
       },  
       ],
+      reviews: []
       }
   },
 
   methods: {
     addToCart() {
-      this.$emit('add-to-cart', this.variants[this.selectedVariant].variantId)
+      this.$emit('add-to-cart', this.variants[this.selectedVariant].variantId);
     },
     removeFromCart() {
-      this.$emit('remove-from-cart', this.variants[this.selectedVariant].variantId)
+      this.$emit('remove-from-cart', this.variants[this.selectedVariant].variantId);
     },
     updateProduct(index) {
       this.selectedVariant = index;
+    },
+    addReview(productReview) {
+      this.reviews.push(productReview);
     }
   },
 
@@ -96,6 +112,14 @@ Vue.component('product', {
 Vue.component('product-review', {
   template: `
     <form class="review-form" @submit.prevent="onSubmit">
+
+      <p v-if="errors.length">
+        <b>Please correct the following error(s):</b>
+        <ul>
+          <li v-for="error in errors">{{ error }}</li>
+        </ul>
+      </P>
+
       <p>
         <label for="name">Name:</label>
         <input id="name" v-model="name" placeholder="name">
@@ -126,20 +150,28 @@ Vue.component('product-review', {
     return {
       name: null,
       review: null,
-      rating:null
+      rating: null,
+      errors: []
     }
   },
 
   methods: {
     onSubmit() {
-      let productReview = {
-        name:this.name,
-        review: this.review,
-        rating: this.rating
+      if(this.name && this.review && this.rating) {
+        let productReview = {
+          name: this.name,
+          review: this.review,
+          rating: this.rating
+        }
+        this.$emit('review-submitted', productReview)
+        this.name = null
+        this.review = null
+        this.rating = null
+      } else {
+        if(!this.name) this.errors.push("Name required")
+        if(!this.review) this.errors.push("review required")
+        if(!this.rating) this.errors.push("rating required")
       }
-      this.name = null
-      this.review = null
-      this.rating = null
     }
   }
 })
